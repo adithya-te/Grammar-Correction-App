@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+  # LanguageTool server (self-hosted)
+  languagetool:
+    image: erikvl87/languagetool:latest
+    container_name: languagetool-server
+    ports:
+      - "8010:8010"
+    environment:
+      - Java_Xms=512m
+      - Java_Xmx=2g
+      - langtool_languageModel=/ngrams
+      - langtool_fasttextModel=/fasttext
+      - langtool_fasttextBinary=/fasttext/fasttext
+    volumes:
+      - languagetool_ngrams:/ngrams
+      - languagetool_fasttext:/fasttext
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8010/v2/languages || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - grammar-network
+
+  # Backend API server
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: grammar-backend
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - LANGUAGETOOL_URL=http://languagetool:8010
+      - FRONTEND_URL=http://localhost:3000
+      - LANGUAGETOOL_TIMEOUT=30000
+    depends_on:
+      languagetool:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3001/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - grammar-network
+
+  # Frontend React app (optional, for production)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: grammar-frontend
+    ports:
+      - "3000:80"
+    environment:
+      - REACT_APP_API_URL=http://localhost:3001/api
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - grammar-network
+
+volumes:
+  languagetool_ngrams:
+    driver: local
+  languagetool_fasttext:
+    driver: local
+
+networks:
+  grammar-network:
+    driver: bridge

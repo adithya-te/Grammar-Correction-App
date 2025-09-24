@@ -1,0 +1,18 @@
+{
+  "short_name": "Grammar AI",
+  "name": "Universal Grammar Correction Tool",
+  "description": "Advanced AI grammar correction that works with any sentence",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#667eea",
+  "background_color": "#ffffff",
+  "categories": ["productivity", "education", "writing"],
+  "lang": "en"
+}
